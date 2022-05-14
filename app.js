@@ -4,8 +4,10 @@ const Bodyparser = require("Body-parser")
 const ejs = require("ejs")
 const exp = require("constants");
 const bodyParser = require("Body-parser");
-const md5 = require('md5')
-    //const encrypt = require("mongoose-encryption")
+//const md5 = require('md5')
+const bcrypt = require('bcrypt')
+const saltRounds = 10;
+//const encrypt = require("mongoose-encryption")
 
 const mongoose = require('mongoose');
 const { stringify } = require("querystring");
@@ -27,28 +29,34 @@ const userSchema = new mongoose.Schema({
 
 const User = new mongoose.model("User", userSchema)
 
-app.post("/register", function functionName(req, res) {
-        const newUser = new User({
-            email: req.body.username,
-            password: md5(req.body.password)
-        })
-        newUser.save(function(err) {
-            if (err)
-                console.log(err)
-            else
-                res.render("secrets")
-        })
+app.post("/register", function(req, res) {
+        bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
+            const newUser = new User({
+                email: req.body.username,
+                password: hash
+            })
+            newUser.save(function(err) {
+                if (err)
+                    console.log(err)
+                else
+                    res.render("secrets")
+            })
+
+        });
+
     }
 
 )
 app.post("/login", function(req, res) {
     const username = req.body.username
-    const password = md5(req.body.password)
+    const password = req.body.password
     User.findOne({ email: username }, function(err, founduser) {
         if (founduser)
-            if (founduser.password === password) {
-                res.render("secrets");
-            }
+            bcrypt.compare(password, founduser.password, function(err, result) {
+                if (result == true) { res.render("secrets"); }
+            }); {
+
+        }
     })
 })
 
